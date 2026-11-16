@@ -28,6 +28,7 @@ class DatabaseProvider
             DatabaseType::MONGODB => new MongodbDatabase,
             DatabaseType::MSSQL => new MssqlDatabase,
             DatabaseType::FIREBIRD => new FirebirdDatabase,
+            DatabaseType::QDRANT => new QdrantDatabase,
         };
     }
 

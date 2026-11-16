@@ -32,7 +32,7 @@ class DatabaseServerExtraConfig
             ['auth_source',         fn ($v) => $type === DatabaseType::MONGODB->value && $v !== '' && $v !== null, fn ($v) => $v],
             ['srv_enabled',         fn ($v) => $type === DatabaseType::MONGODB->value && $v,                       fn () => true],
             ['connection_options',  fn ($v) => $type === DatabaseType::MONGODB->value && $v !== '' && $v !== null, fn ($v) => $v],
-            ['dump_flags',          fn ($v) => $type !== DatabaseType::SQLITE->value && $v !== '' && $v !== null,  fn ($v) => $v],
+            ['dump_flags',          fn ($v) => (DatabaseType::tryFrom($type)?->supportsDumpFlags() ?? false) && $v !== '' && $v !== null, fn ($v) => $v],
             ['dump_format',         fn ($v) => $type === DatabaseType::POSTGRESQL->value && $v === 'custom',       fn () => 'custom'],
             ['dump_privileges',     fn ($v) => $type === DatabaseType::POSTGRESQL->value && $v,                    fn () => true],
             ['ssl_enabled',         fn ($v) => in_array($type, [DatabaseType::MYSQL->value, DatabaseType::POSTGRESQL->value], true) && $v, fn () => true],

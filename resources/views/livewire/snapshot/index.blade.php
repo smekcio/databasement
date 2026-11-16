@@ -143,7 +143,7 @@
                 @php
                     $status = $snapshot->deleting ? 'deleting' : $snapshot->job?->status?->value;
                     $job = $snapshot->job;
-                    $canRestore = $status === 'completed' && $snapshot->hasExistingFile() && $snapshot->database_type !== \App\Enums\DatabaseType::REDIS;
+                    $canRestore = $status === 'completed' && $snapshot->hasExistingFile() && $snapshot->database_type->supportsRestore();
                     $completedFiles = $snapshot->files->where('status', \App\Enums\SnapshotFileStatus::Completed);
                     $canDownload = $status === 'completed' && $completedFiles->where('file_exists', true)->isNotEmpty();
                     $canDelete = in_array($status, ['completed', 'failed', 'cancelled'], true);

@@ -207,7 +207,10 @@ class Modal extends Component
                 /** @var Builder<Snapshot> $q */
                 $q->completed();
             })
-            ->where('database_type', '!=', DatabaseType::REDIS->value)
+            ->whereIn('database_type', array_map(
+                fn (DatabaseType $type): string => $type->value,
+                array_values(array_filter(DatabaseType::cases(), fn (DatabaseType $type): bool => $type->supportsRestore())),
+            ))
             ->orderBy('name')
             ->get(['id', 'name'])
             ->map(fn (DatabaseServer $s) => ['id' => $s->id, 'name' => $s->name])

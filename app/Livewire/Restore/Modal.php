@@ -441,7 +441,7 @@ class Modal extends Component
 
         return DatabaseServer::query()
             ->whereRaw('database_type = ?', [$snapshot->database_type->value])
-            ->where('database_type', '!=', DatabaseType::REDIS->value)
+            ->whereIn('database_type', self::restorableTypeValues())
             ->orderBy('name')
             ->get(['id', 'name', 'database_type', 'host', 'port']);
     }
@@ -467,7 +467,18 @@ class Modal extends Component
      */
     public function dbTypeOptions(): array
     {
-        return DatabaseType::toSelectOptions(fn (DatabaseType $type): bool => $type !== DatabaseType::REDIS);
+        return DatabaseType::toSelectOptions(fn (DatabaseType $type): bool => $type->supportsRestore());
+    }
+
+    /**
+     * @return list<string>
+     */
+    private static function restorableTypeValues(): array
+    {
+        return array_map(
+            fn (DatabaseType $type): string => $type->value,
+            array_values(array_filter(DatabaseType::cases(), fn (DatabaseType $type): bool => $type->supportsRestore())),
+        );
     }
 
     /**

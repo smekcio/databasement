@@ -24,6 +24,14 @@ trait OpensServerRestore
             return;
         }
 
+        if (! $server->database_type->supportsRestore()) {
+            $this->warning(__('Automated restore is not supported for :type. Please restore manually.', [
+                'type' => $server->database_type->label(),
+            ]));
+
+            return;
+        }
+
         $this->dispatch('open-restore-modal', mode: 'from-server', targetServerId: $server->id);
     }
 }

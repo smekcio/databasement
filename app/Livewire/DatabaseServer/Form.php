@@ -689,7 +689,7 @@ class Form extends \Livewire\Form
      */
     public function hasOptionalCredentials(): bool
     {
-        return $this->isRedis() || $this->isMongodb();
+        return DatabaseType::tryFrom($this->database_type)?->hasOptionalCredentials() ?? false;
     }
 
     /**
@@ -706,7 +706,7 @@ class Form extends \Livewire\Form
      */
     public function supportsDumpFlags(): bool
     {
-        return ! $this->isSqlite() && $this->database_type !== '';
+        return DatabaseType::tryFrom($this->database_type)?->supportsDumpFlags() ?? false;
     }
 
     /**
@@ -926,7 +926,7 @@ class Form extends \Livewire\Form
      */
     private function getBaseValidationRules(): array
     {
-        return [
+        $rules = [
             'name' => 'required|string|max:255',
             'database_type' => ['required', 'string', Rule::in(array_map(
                 fn (DatabaseType $type) => $type->value,
@@ -935,7 +935,6 @@ class Form extends \Livewire\Form
             'description' => 'nullable|string|max:1000',
             'agent_id' => ['nullable', Rule::exists('agents', 'id')->where('organization_id', app(CurrentOrganization::class)->id())],
             'backups_enabled' => 'boolean',
-            'dump_flags' => ['nullable', 'string', 'max:500', new SafeDumpFlags(DatabaseType::tryFrom($this->database_type))],
             'dump_format' => ['nullable', 'string', Rule::in(['plain', 'custom'])],
             'dump_privileges' => 'boolean',
             'ssl_enabled' => 'boolean',
@@ -948,6 +947,12 @@ class Form extends \Livewire\Form
             )],
             'notification_channel_ids.*' => ['string', 'exists:notification_channels,id'],
         ];
+
+        if (DatabaseType::tryFrom($this->database_type)?->supportsDumpFlags() ?? false) {
+            $rules['dump_flags'] = ['nullable', 'string', 'max:500', new SafeDumpFlags(DatabaseType::tryFrom($this->database_type))];
+        }
+
+        return $rules;
     }
 
     public function store(): bool

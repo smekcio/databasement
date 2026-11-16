@@ -18,6 +18,7 @@ enum DatabaseType: string
     case MONGODB = 'mongodb';
     case MSSQL = 'mssql';
     case FIREBIRD = 'firebird';
+    case QDRANT = 'qdrant';
 
     public function label(): string
     {
@@ -29,6 +30,7 @@ enum DatabaseType: string
             self::MONGODB => 'MongoDB',
             self::MSSQL => 'Microsoft SQL Server',
             self::FIREBIRD => 'Firebird',
+            self::QDRANT => 'Qdrant',
         };
     }
 
@@ -42,6 +44,7 @@ enum DatabaseType: string
             self::MONGODB => 'devicon.mongodb',
             self::MSSQL => 'devicon.microsoftsqlserver',
             self::FIREBIRD => 'devicon.firebird',
+            self::QDRANT => 'devicon.qdrant',
         };
     }
 
@@ -76,6 +79,42 @@ enum DatabaseType: string
     }
 
     /**
+     * Username and password may be omitted. Redis and MongoDB can run without
+     * AUTH; Qdrant sends the password as an optional API key.
+     */
+    public function hasOptionalCredentials(): bool
+    {
+        return match ($this) {
+            self::REDIS, self::MONGODB, self::QDRANT => true,
+            default => false,
+        };
+    }
+
+    /**
+     * Whether the dump is a client command that accepts extra flags.
+     * SQLite and Qdrant do not: SQLite uses its backup API, Qdrant an HTTP snapshot.
+     */
+    public function supportsDumpFlags(): bool
+    {
+        return match ($this) {
+            self::SQLITE, self::QDRANT => false,
+            default => true,
+        };
+    }
+
+    /**
+     * Whether a snapshot of this type can be restored by the app.
+     * Redis and Qdrant have no automated restore.
+     */
+    public function supportsRestore(): bool
+    {
+        return match ($this) {
+            self::REDIS, self::QDRANT => false,
+            default => true,
+        };
+    }
+
+    /**
      * Whether the host may be an absolute path to a Unix socket: a directory
      * for libpq, the socket file itself for the MySQL clients.
      */
@@ -102,6 +141,7 @@ enum DatabaseType: string
             self::MONGODB => 27017,
             self::MSSQL => 1433,
             self::FIREBIRD => 3050,
+            self::QDRANT => 6333,
         };
     }
 
@@ -143,6 +183,7 @@ enum DatabaseType: string
                 ? sprintf('sqlsrv:Server=%s,%d;Database=%s;TrustServerCertificate=true;Encrypt=true', $host, $port, $database)
                 : sprintf('sqlsrv:Server=%s,%d;TrustServerCertificate=true;Encrypt=true', $host, $port),
             self::FIREBIRD => throw new \RuntimeException('Firebird does not support PDO connections'),
+            self::QDRANT => throw new \RuntimeException('Qdrant does not support PDO connections'),
         };
     }
 
@@ -155,7 +196,7 @@ enum DatabaseType: string
      */
     public function createPdo(DatabaseServer $server, ?string $database = null, int $timeout = 30): \PDO
     {
-        if (in_array($this, [self::REDIS, self::MONGODB, self::FIREBIRD], true)) {
+        if (in_array($this, [self::REDIS, self::MONGODB, self::FIREBIRD, self::QDRANT], true)) {
             throw new \RuntimeException("{$this->label()} does not support PDO connections");
         }
 
@@ -259,6 +300,7 @@ enum DatabaseType: string
             self::MONGODB => 'archive',
             self::MSSQL => 'dacpac',
             self::FIREBIRD => 'fbk',
+            self::QDRANT => 'snapshot',
             default => 'sql',
         };
     }

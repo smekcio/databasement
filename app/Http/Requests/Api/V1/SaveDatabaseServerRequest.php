@@ -65,14 +65,16 @@ class SaveDatabaseServerRequest extends FormRequest
             'ssh_config_id' => ['nullable', Rule::exists('database_server_ssh_configs', 'id')->where('organization_id', app(CurrentOrganization::class)->id())],
             'agent_id' => ['nullable', Rule::exists('agents', 'id')->where('organization_id', app(CurrentOrganization::class)->id())],
             'managed_by' => 'nullable|string|max:255',
-            // Every engine but SQLite appends these to its dump command.
-            'dump_flags' => ['nullable', 'string', 'max:500', new SafeDumpFlags($databaseType)],
         ];
+
+        if ($databaseType?->supportsDumpFlags() ?? false) {
+            $rules['dump_flags'] = ['nullable', 'string', 'max:500', new SafeDumpFlags($databaseType)];
+        }
 
         if ($databaseType !== null && $databaseType !== DatabaseType::SQLITE) {
             $rules['host'] = ['required', 'string', 'max:255', new SafeHost($databaseType)];
             $rules['port'] = 'required|integer|min:1|max:65535';
-            $rules['username'] = in_array($databaseType, [DatabaseType::MONGODB, DatabaseType::REDIS], true)
+            $rules['username'] = $databaseType->hasOptionalCredentials()
                 ? 'nullable|string|max:255'
                 : 'required|string|max:255';
             $rules['password'] = 'nullable';

@@ -152,6 +152,14 @@ class Index extends Component
 
         $this->authorize('restoreFrom', $snapshot);
 
+        if (! $snapshot->database_type->supportsRestore()) {
+            $this->warning(__('Automated restore is not supported for :type. Please restore manually.', [
+                'type' => $snapshot->database_type->label(),
+            ]));
+
+            return;
+        }
+
         $this->dispatch('open-restore-modal', mode: 'from-snapshot', snapshotId: $snapshotId);
     }
 
